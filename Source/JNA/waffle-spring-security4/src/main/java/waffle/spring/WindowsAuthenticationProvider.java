@@ -21,6 +21,7 @@ import org.springframework.security.authentication.AuthenticationServiceExceptio
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.mapping.GrantedAuthoritiesMapper;
 
 import waffle.servlet.WindowsPrincipal;
 import waffle.windows.auth.IWindowsAuthProvider;
@@ -29,32 +30,35 @@ import waffle.windows.auth.PrincipalFormat;
 
 /**
  * A Waffle authentication provider for Spring-security.
- * 
+ *
  * @author dblock[at]dblock[dot]org
  */
 public class WindowsAuthenticationProvider implements AuthenticationProvider {
 
     /** The Constant LOGGER. */
-    private static final Logger     LOGGER                  = LoggerFactory
+    private static final Logger      LOGGER                   = LoggerFactory
             .getLogger(WindowsAuthenticationProvider.class);
 
     /** The principal format. */
-    private PrincipalFormat         principalFormat         = PrincipalFormat.FQN;
+    private PrincipalFormat          principalFormat          = PrincipalFormat.FQN;
 
     /** The role format. */
-    private PrincipalFormat         roleFormat              = PrincipalFormat.FQN;
+    private PrincipalFormat          roleFormat               = PrincipalFormat.FQN;
 
     /** The allow guest login. */
-    private boolean                 allowGuestLogin         = true;
+    private boolean                  allowGuestLogin          = true;
 
     /** The auth provider. */
-    private IWindowsAuthProvider    authProvider;
+    private IWindowsAuthProvider     authProvider;
 
     /** The granted authority factory. */
-    private GrantedAuthorityFactory grantedAuthorityFactory = WindowsAuthenticationToken.DEFAULT_GRANTED_AUTHORITY_FACTORY;
+    private GrantedAuthorityFactory  grantedAuthorityFactory  = WindowsAuthenticationToken.DEFAULT_GRANTED_AUTHORITY_FACTORY;
+
+    /** The granted authority mapper. */
+    private GrantedAuthoritiesMapper grantedAuthoritiesMapper = WindowsAuthenticationToken.DEFAULT_GRANTED_AUTHORITIES_MAPPER;
 
     /** The default granted authority. */
-    private GrantedAuthority        defaultGrantedAuthority = WindowsAuthenticationToken.DEFAULT_GRANTED_AUTHORITY;
+    private GrantedAuthority         defaultGrantedAuthority  = WindowsAuthenticationToken.DEFAULT_GRANTED_AUTHORITY;
 
     /**
      * Instantiates a new windows authentication provider.
@@ -91,7 +95,7 @@ public class WindowsAuthenticationProvider implements AuthenticationProvider {
         WindowsAuthenticationProvider.LOGGER.debug("roles: {}", windowsPrincipal.getRolesString());
 
         final WindowsAuthenticationToken token = new WindowsAuthenticationToken(windowsPrincipal,
-                this.grantedAuthorityFactory, this.defaultGrantedAuthority);
+                this.grantedAuthorityFactory, this.grantedAuthoritiesMapper, this.defaultGrantedAuthority);
 
         WindowsAuthenticationProvider.LOGGER.info("successfully logged in user: {}", windowsIdentity.getFqn());
         return token;
@@ -222,6 +226,25 @@ public class WindowsAuthenticationProvider implements AuthenticationProvider {
      */
     public void setGrantedAuthorityFactory(final GrantedAuthorityFactory value) {
         this.grantedAuthorityFactory = value;
+    }
+
+    /**
+     * Gets the granted authorities mapper.
+     *
+     * @return the granted authorities mapper
+     */
+    public GrantedAuthoritiesMapper getGrantedAuthoritiesMapper() {
+        return grantedAuthoritiesMapper;
+    }
+
+    /**
+     * Sets the granted authorities mapper.
+     *
+     * @param value
+     *            the new granted authorities mapper
+     */
+    public void setGrantedAuthoritiesMapper(GrantedAuthoritiesMapper grantedAuthoritiesMapper) {
+        this.grantedAuthoritiesMapper = grantedAuthoritiesMapper;
     }
 
     /**

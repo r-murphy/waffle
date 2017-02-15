@@ -13,44 +13,54 @@ package waffle.spring;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.authority.mapping.GrantedAuthoritiesMapper;
+import org.springframework.security.core.authority.mapping.NullAuthoritiesMapper;
 
 import waffle.servlet.WindowsPrincipal;
 import waffle.windows.auth.WindowsAccount;
 
 /**
  * A Windows authentication token.
- * 
+ *
  * @author dblock[at]dblock[dot]org
  */
 public class WindowsAuthenticationToken implements Authentication {
 
     /** The Constant serialVersionUID. */
-    private static final long                   serialVersionUID                  = 1L;
+    private static final long                    serialVersionUID                   = 1L;
 
     /**
      * The {@link GrantedAuthorityFactory} that is used by default if a custom one is not specified. This default
      * {@link GrantedAuthorityFactory} is a {@link FqnGrantedAuthorityFactory} with prefix {@code "ROLE_"} and will
      * convert the fqn to uppercase
      */
-    public static final GrantedAuthorityFactory DEFAULT_GRANTED_AUTHORITY_FACTORY = new FqnGrantedAuthorityFactory(
+    public static final GrantedAuthorityFactory  DEFAULT_GRANTED_AUTHORITY_FACTORY  = new FqnGrantedAuthorityFactory(
             "ROLE_", true);
+
+    /**
+     * The {@link GrantedAuthoritiesMapper} that is used by default if a custom one is not specified. This default
+     * {@link GrantedAuthoritiesMapper} is a {@NullGrantedAuthoritiesMapper} which returns the authorities without
+     * mapping.
+     */
+    public static final GrantedAuthoritiesMapper DEFAULT_GRANTED_AUTHORITIES_MAPPER = new NullAuthoritiesMapper();
 
     /**
      * The {@link GrantedAuthority} that will be added to every WindowsAuthenticationToken, unless another (or null) is
      * specified.
      */
-    public static final GrantedAuthority        DEFAULT_GRANTED_AUTHORITY         = new SimpleGrantedAuthority(
+    public static final GrantedAuthority         DEFAULT_GRANTED_AUTHORITY          = new SimpleGrantedAuthority(
             "ROLE_USER");
 
     /** The principal. */
-    private final WindowsPrincipal              principal;
+    private final WindowsPrincipal               principal;
 
     /** The authorities. */
-    private final Collection<GrantedAuthority>  authorities;
+    private final Collection<GrantedAuthority>   authorities;
 
     /**
      * Convenience constructor that calls
@@ -67,6 +77,7 @@ public class WindowsAuthenticationToken implements Authentication {
      */
     public WindowsAuthenticationToken(final WindowsPrincipal identity) {
         this(identity, WindowsAuthenticationToken.DEFAULT_GRANTED_AUTHORITY_FACTORY,
+                WindowsAuthenticationToken.DEFAULT_GRANTED_AUTHORITIES_MAPPER,
                 WindowsAuthenticationToken.DEFAULT_GRANTED_AUTHORITY);
     }
 
@@ -82,15 +93,24 @@ public class WindowsAuthenticationToken implements Authentication {
      *            if not null, this {@link GrantedAuthority} will always be added to the granted authorities list
      */
     public WindowsAuthenticationToken(final WindowsPrincipal identity,
-            final GrantedAuthorityFactory grantedAuthorityFactory, final GrantedAuthority defaultGrantedAuthority) {
+            final GrantedAuthorityFactory grantedAuthorityFactory,
+            final GrantedAuthoritiesMapper grantedAuthoritiesMapper,
+            final GrantedAuthority defaultGrantedAuthority) {
 
         this.principal = identity;
-        this.authorities = new ArrayList<>();
+        List<GrantedAuthority> authorities = new ArrayList<>();
         if (defaultGrantedAuthority != null) {
-            this.authorities.add(defaultGrantedAuthority);
+            authorities.add(defaultGrantedAuthority);
         }
         for (final WindowsAccount group : this.principal.getGroups().values()) {
-            this.authorities.add(grantedAuthorityFactory.createGrantedAuthority(group));
+            authorities.add(grantedAuthorityFactory.createGrantedAuthority(group));
+        }
+        if (grantedAuthoritiesMapper == null) {
+            this.authorities = authorities;
+        }
+        else {
+            Collection<? extends GrantedAuthority> mappedAuthorities = grantedAuthoritiesMapper.mapAuthorities(authorities);
+            this.authorities = new ArrayList<>(mappedAuthorities);
         }
     }
 

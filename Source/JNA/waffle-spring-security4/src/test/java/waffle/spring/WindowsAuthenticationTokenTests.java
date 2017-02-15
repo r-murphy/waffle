@@ -23,6 +23,7 @@ import org.springframework.security.core.GrantedAuthority;
 
 import waffle.mock.MockWindowsIdentity;
 import waffle.servlet.WindowsPrincipal;
+import waffle.spring.mappers.ExcludedAuthoritiesMapper;
 
 /**
  * The Class WindowsAuthenticationTokenTests.
@@ -80,7 +81,9 @@ public class WindowsAuthenticationTokenTests {
     public void testCustomGrantedAuthorityFactory() {
 
         final WindowsAuthenticationToken myToken = new WindowsAuthenticationToken(this.principal,
-                new FqnGrantedAuthorityFactory(null, false), null);
+                new FqnGrantedAuthorityFactory(null, false),
+                WindowsAuthenticationToken.DEFAULT_GRANTED_AUTHORITIES_MAPPER,
+                null);
 
         Assert.assertNull(myToken.getCredentials());
         Assert.assertNull(myToken.getDetails());
@@ -96,6 +99,30 @@ public class WindowsAuthenticationTokenTests {
         Collections.sort(list);
         Assert.assertEquals("group1", list.get(0));
         Assert.assertEquals("group2", list.get(1));
+        Assert.assertEquals(this.principal, myToken.getPrincipal());
+    }
+
+    @Test
+    public void testCustomGrantedAuthoritiesMapper() {
+
+        final WindowsAuthenticationToken myToken = new WindowsAuthenticationToken(this.principal,
+                WindowsAuthenticationToken.DEFAULT_GRANTED_AUTHORITY_FACTORY,
+                new ExcludedAuthoritiesMapper("ROLE_GROUP1"),
+                null);
+
+        Assert.assertNull(myToken.getCredentials());
+        Assert.assertNull(myToken.getDetails());
+        Assert.assertTrue(myToken.isAuthenticated());
+        Assert.assertEquals("localhost\\user1", myToken.getName());
+        final Collection<GrantedAuthority> authorities = myToken.getAuthorities();
+        Assert.assertEquals(1, authorities.size());
+
+        final List<String> list = new ArrayList<>();
+        for (GrantedAuthority grantedAuthority : authorities) {
+            list.add(grantedAuthority.getAuthority());
+        }
+        Collections.sort(list);
+        Assert.assertEquals("ROLE_GROUP2", list.get(0));
         Assert.assertEquals(this.principal, myToken.getPrincipal());
     }
 

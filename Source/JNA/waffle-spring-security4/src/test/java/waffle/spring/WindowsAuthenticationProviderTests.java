@@ -30,6 +30,7 @@ import org.springframework.security.core.GrantedAuthority;
 import waffle.mock.MockWindowsAuthProvider;
 import waffle.mock.MockWindowsIdentity;
 import waffle.servlet.WindowsPrincipal;
+import waffle.spring.mappers.ExcludedAuthoritiesMapper;
 import waffle.windows.auth.PrincipalFormat;
 import waffle.windows.auth.impl.WindowsAccountImpl;
 
@@ -138,6 +139,32 @@ public class WindowsAuthenticationProviderTests {
         Collections.sort(list);
         Assert.assertEquals("Everyone", list.get(0));
         Assert.assertEquals("Users", list.get(1));
+        Assert.assertTrue(authenticated.getPrincipal() instanceof WindowsPrincipal);
+    }
+
+    @Test
+    public void testAuthenticateWithCustomGrantedAuthoritiesMapper() {
+        this.provider.setDefaultGrantedAuthority(null);
+        this.provider.setGrantedAuthoritiesMapper(new ExcludedAuthoritiesMapper("ROLE_EVERYONE"));
+
+        final MockWindowsIdentity mockIdentity = new MockWindowsIdentity(WindowsAccountImpl.getCurrentUsername(),
+                new ArrayList<String>());
+        final WindowsPrincipal principal = new WindowsPrincipal(mockIdentity);
+        final UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(principal,
+                "password");
+
+        final Authentication authenticated = this.provider.authenticate(authentication);
+        Assert.assertNotNull(authenticated);
+        Assert.assertTrue(authenticated.isAuthenticated());
+        final Collection<? extends GrantedAuthority> authorities = authenticated.getAuthorities();
+        Assert.assertEquals(1, authorities.size());
+
+        final List<String> list = new ArrayList<>();
+        for (GrantedAuthority grantedAuthority : authorities) {
+            list.add(grantedAuthority.getAuthority());
+        }
+        Collections.sort(list);
+        Assert.assertEquals("ROLE_USERS", list.get(0));
         Assert.assertTrue(authenticated.getPrincipal() instanceof WindowsPrincipal);
     }
 

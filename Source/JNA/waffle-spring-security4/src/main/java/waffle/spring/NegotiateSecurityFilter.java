@@ -25,6 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.mapping.GrantedAuthoritiesMapper;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.GenericFilterBean;
 
@@ -38,35 +39,38 @@ import waffle.windows.auth.PrincipalFormat;
 
 /**
  * A Spring Negotiate security filter.
- * 
+ *
  * @author dblock[at]dblock[dot]org
  */
 public class NegotiateSecurityFilter extends GenericFilterBean {
 
     /** The Constant LOGGER. */
-    private static final Logger              LOGGER                  = LoggerFactory
+    private static final Logger              LOGGER                   = LoggerFactory
             .getLogger(NegotiateSecurityFilter.class);
 
     /** The provider. */
     private SecurityFilterProviderCollection provider;
 
     /** The principal format. */
-    private PrincipalFormat                  principalFormat         = PrincipalFormat.FQN;
+    private PrincipalFormat                  principalFormat          = PrincipalFormat.FQN;
 
     /** The role format. */
-    private PrincipalFormat                  roleFormat              = PrincipalFormat.FQN;
+    private PrincipalFormat                  roleFormat               = PrincipalFormat.FQN;
 
     /** The allow guest login. */
-    private boolean                          allowGuestLogin         = true;
+    private boolean                          allowGuestLogin          = true;
 
     /** The impersonate. */
     private boolean                          impersonate;
 
     /** The granted authority factory. */
-    private GrantedAuthorityFactory          grantedAuthorityFactory = WindowsAuthenticationToken.DEFAULT_GRANTED_AUTHORITY_FACTORY;
+    private GrantedAuthorityFactory          grantedAuthorityFactory  = WindowsAuthenticationToken.DEFAULT_GRANTED_AUTHORITY_FACTORY;
+
+    /** The granted authorities mapper. */
+    private GrantedAuthoritiesMapper         grantedAuthoritiesMapper = WindowsAuthenticationToken.DEFAULT_GRANTED_AUTHORITIES_MAPPER;
 
     /** The default granted authority. */
-    private GrantedAuthority                 defaultGrantedAuthority = WindowsAuthenticationToken.DEFAULT_GRANTED_AUTHORITY;
+    private GrantedAuthority                 defaultGrantedAuthority  = WindowsAuthenticationToken.DEFAULT_GRANTED_AUTHORITY;
 
     /**
      * Instantiates a new negotiate security filter.
@@ -130,7 +134,7 @@ public class NegotiateSecurityFilter extends GenericFilterBean {
                 NegotiateSecurityFilter.LOGGER.debug("roles: {}", principal.getRolesString());
 
                 final Authentication authentication = new WindowsAuthenticationToken(principal,
-                        this.grantedAuthorityFactory, this.defaultGrantedAuthority);
+                        this.grantedAuthorityFactory, this.grantedAuthoritiesMapper, this.defaultGrantedAuthority);
 
                 if (!this.setAuthentication(request, response, authentication)) {
                     return;
@@ -194,7 +198,7 @@ public class NegotiateSecurityFilter extends GenericFilterBean {
 
     /**
      * Send a 401 Unauthorized along with protocol authentication headers.
-     * 
+     *
      * @param response
      *            HTTP Response
      * @param close
@@ -347,6 +351,25 @@ public class NegotiateSecurityFilter extends GenericFilterBean {
      */
     public void setGrantedAuthorityFactory(final GrantedAuthorityFactory value) {
         this.grantedAuthorityFactory = value;
+    }
+
+    /**
+     * Gets the granted authorities mapper.
+     *
+     * @return the granted authorities mapper
+     */
+    public GrantedAuthoritiesMapper getGrantedAuthoritiesMapper() {
+        return grantedAuthoritiesMapper;
+    }
+
+    /**
+     * Sets the granted authorities mapper.
+     *
+     * @param value
+     *            the new granted authorities mapper
+     */
+    public void setGrantedAuthoritiesMapper(GrantedAuthoritiesMapper grantedAuthoritiesMapper) {
+        this.grantedAuthoritiesMapper = grantedAuthoritiesMapper;
     }
 
     /**
